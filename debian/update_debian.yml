@@ -3,7 +3,7 @@
   hosts: debian_servers
   become: true
   vars:
-    ansible_become_password: "{{ (lookup('community.hashi_vault.hashi_vault', 'ad/creds/ldapci-role'))['current_password'] }}"
+    ansible_become_password: "{{ lookup('community.hashi_vault.vault_read', 'ad/creds/ldapci-role')['data']['current_password'] }}"
   tasks:
     - name: apt update と apt upgrade を実行
       ansible.builtin.apt:
