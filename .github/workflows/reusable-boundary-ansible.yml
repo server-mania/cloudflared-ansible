@@ -1,0 +1,76 @@
+name: Reusable Boundary Ansible
+
+on:
+  workflow_call:
+    inputs:
+      ansible_dir:
+        required: true
+        type: string
+        description: "ansibleを実行するディレクトリ "
+      ansible_command:
+        required: true
+        type: string
+        description: "実行するansibleコマンド"
+
+jobs:
+  boundary-job:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Boundary
+        uses: hashicorp/setup-boundary@main
+        with:
+          addr: ${{ secrets.BOUNDARY_ADDR }}
+
+      - name: Network Check
+        run: |
+          curl -s -w "%{http_code}" \
+            -H "CF-Access-Client-Id: ${{ secrets.CF_ACCESS_CLIENT_ID }}" \
+            -H "CF-Access-Client-Secret: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}" \
+            ${{ secrets.VAULT_ADDR }}/v1/sys/health
+
+      - name: Import Secrets from Vault
+        uses: hashicorp/vault-action@v3
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          role: github-actions-role
+          method: jwt
+          extraHeaders: |
+            CF-Access-Client-Id: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+            CF-Access-Client-Secret: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+          secrets: |
+            secret/data/boundary/ci-credentials login_name | BOUNDARY_USER ;
+            secret/data/boundary/ci-credentials password | BOUNDARY_PASSWORD ;
+            secret/data/boundary/ci-credentials auth_method_id | BOUNDARY_AUTH_METHOD_ID ;
+            secret/data/boundary/ci-credentials known_hosts | SSH_KNOWN_HOSTS ;
+
+      - name: Copy SSH Config
+        run: |
+          mkdir -p ~/.ssh
+          cp sshSettings/config ~/.ssh/ && chmod 600 ~/.ssh/config
+          echo "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+
+      - name: install ansible Extensions
+        run: |
+         pip install hvac
+         ansible-galaxy collection install community.hashi_vault
+
+      - name: Run Ansible via Boundary
+        env:
+          BOUNDARY_PASSWORD: ${{ env.BOUNDARY_PASSWORD }}
+          SUDO_PASSWORD: ${{ env.SUDO_PASSWORD }}
+          BOUNDARY_ADDR: ${{ secrets.BOUNDARY_ADDR }}
+        run: |
+          export BOUNDARY_TOKEN=$(boundary authenticate password \
+            -auth-method-id ${{ env.BOUNDARY_AUTH_METHOD_ID }} \
+            -login-name ${{ env.BOUNDARY_USER }} \
+            -password env://BOUNDARY_PASSWORD \
+            -format json | jq -r '.item.attributes.token')
+          
+          cd ${{ inputs.ansible_dir }}
+          ${{ inputs.ansible_command }}

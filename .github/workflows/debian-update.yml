@@ -1,0 +1,15 @@
+name: Update Debian
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  call-reusable:
+    uses: ./.github/workflows/reusable-boundary-ansible.yml
+    with:
+      ansible_dir: "debian"
+      ansible_command: "ansible-playbook -i hosts.ini update_debian.yml"
+    secrets: inherit

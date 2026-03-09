@@ -1,0 +1,2 @@
+Host *.japan-is.fun
+    ProxyCommand boundary connect -target-id %h -exec nc -- {{boundary.ip}} {{boundary.port}}

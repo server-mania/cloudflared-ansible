@@ -1,0 +1,27 @@
+#ansible-playbook update_pve.yml -K
+
+---
+- name: Proxmox VE ホストのアップデートとアップグレード
+  hosts: proxmox
+  become: yes 
+  vars:
+    ansible_become_password: "{{ (lookup('community.hashi_vault.hashi_vault', 'ad/creds/ldapci-role'))['current_password'] }}"
+  tasks:
+    - name: aptキャッシュの更新と dist-upgrade の実行
+      ansible.builtin.apt:
+        update_cache: yes
+        upgrade: dist
+        # 不要になった依存パッケージを自動削除する (apt autoremove に相当)
+        autoremove: yes
+        # キャッシュの有効期限を秒で指定（1時間以内に実行されていればupdateをスキップ）
+        cache_valid_time: 3600
+
+    - name: 再起動が必要かどうかを確認する
+      ansible.builtin.stat:
+        path: /var/run/reboot-required
+      register: reboot_required_file
+
+    - name: 再起動が必要なホストを通知する
+      ansible.builtin.debug:
+        msg: "このホストはカーネル等の更新が完了したため、再起動が必要です。"
+      when: reboot_required_file.stat.exists
