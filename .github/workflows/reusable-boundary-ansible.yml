@@ -40,6 +40,7 @@ jobs:
           url: ${{ secrets.VAULT_ADDR }}
           role: github-actions-role
           method: jwt
+          exportToken: true
           extraHeaders: |
             CF-Access-Client-Id: ${{ secrets.CF_ACCESS_CLIENT_ID }}
             CF-Access-Client-Secret: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
