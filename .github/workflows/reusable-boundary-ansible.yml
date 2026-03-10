@@ -63,20 +63,13 @@ jobs:
 
       - name: authenticate boundary
         env:
-          # --- 既存の変数 ---
           BOUNDARY_PASSWORD: ${{ env.BOUNDARY_PASSWORD }}
           SUDO_PASSWORD: ${{ env.SUDO_PASSWORD }}
           BOUNDARY_ADDR: ${{ secrets.BOUNDARY_ADDR }}
           
-          # --- Ansibleのhashi_vaultプラグインが直接参照する変数 ---
           VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
-          VAULT_TOKEN: ${{ env.VAULT_TOKEN }} # vault-actionでexportToken: trueが必要
+          VAULT_TOKEN: ${{ env.VAULT_TOKEN }} 
           
-          # --- Cloudflare Accessを通過するためのヘッダー (重要) ---
-          # lookupプラグインがHTTPリクエストを送る際にこのヘッダーを付与します
-          ANSIBLE_HASHI_VAULT_HTTP_HEADERS: >-
-            {"CF-Access-Client-Id": "${{ secrets.CF_ACCESS_CLIENT_ID }}", 
-             "CF-Access-Client-Secret": "${{ secrets.CF_ACCESS_CLIENT_SECRET }}"}
         run: |
           # Boundary認証トークンの取得
           export BOUNDARY_TOKEN=$(boundary authenticate password \

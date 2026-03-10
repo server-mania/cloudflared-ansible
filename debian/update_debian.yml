@@ -1,15 +1,34 @@
 ---
 - name: Debian 13 Update and Check Reboot
   hosts: debian_servers
-  become: true
+  gather_facts: false
+
   vars:
-    ansible_become_password: "{{ (lookup('community.hashi_vault.hashi_vault', 'ad/creds/ldapci-role'))['current_password'] }}"
+    vault_addr: "{{ lookup('env', 'VAULT_ADDR') }}"
+    v_token: "{{ lookup('env', 'VAULT_TOKEN') }}"
+
   tasks:
+    - name: Vaultから認証情報を取得 (Module版)
+      community.hashi_vault.vault_read:
+        path: "ad/creds/ldapci-role"
+        url: "{{ vault_addr }}"
+        token: "{{ v_token }}"
+        validate_certs: false
+      register: vault_secret
+
+    - name: パスワードを become 用変数にセット
+      ansible.builtin.set_fact:
+        ansible_become_password: "{{ vault_secret.data.data.current_password }}"
+      delegate_to: localhost
+      run_once: true
+      no_log: true
+
     - name: apt update と apt upgrade を実行
       ansible.builtin.apt:
         update_cache: yes
         upgrade: yes       
         autoremove: yes 
+      become: true
 
     - name: 再起動が必要か確認 (/var/run/reboot-required の存在確認)
       ansible.builtin.stat:
