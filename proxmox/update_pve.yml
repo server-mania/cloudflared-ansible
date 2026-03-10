@@ -5,7 +5,7 @@
   hosts: proxmox
   become: yes 
   vars:
-    ansible_become_password: "{{ (lookup('community.hashi_vault.hashi_vault', 'ad/creds/ldapci-role'))['current_password'] }}"
+    ansible_become_password: "{{ lookup('env', 'SUDO_PASSWORD') }}"
   tasks:
     - name: aptキャッシュの更新と dist-upgrade の実行
       ansible.builtin.apt:
