@@ -11,5 +11,5 @@ jobs:
     uses: ./.github/workflows/reusable-boundary-ansible.yml
     with:
       ansible_dir: "debian"
-      ansible_command: "ansible-playbook -i hosts.ini update_debian.yml"
+      ansible_command: "pipx run --spec ansible ansible-playbook -i hosts.ini update_debian.yml"
     secrets: inherit

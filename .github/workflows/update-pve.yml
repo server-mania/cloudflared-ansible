@@ -11,5 +11,5 @@ jobs:
     uses: ./.github/workflows/reusable-boundary-ansible.yml
     with:
       ansible_dir: "proxmox"
-      ansible_command: "ansible-playbook -i hosts.ini update_pve.yml"
+      ansible_command: "pipx run --spec ansible ansible-playbook -i hosts.ini update_pve.yml"
     secrets: inherit
