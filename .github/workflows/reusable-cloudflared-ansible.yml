@@ -29,7 +29,8 @@ jobs:
           url: ${{ secrets.VAULT_ADDR }}
           role: github-actions-role
           method: jwt
-          exportToken: true
+          exportToken: false
+          outputToken: true
           extraHeaders: |
             CF-Access-Client-Id: ${{ secrets.TUNNEL_SERVICE_TOKEN_ID }}
             CF-Access-Client-Secret: ${{ secrets.TUNNEL_SERVICE_TOKEN_SECRET }}
@@ -63,7 +64,7 @@ jobs:
                       -o ProxyCommand="/usr/local/bin/cloudflared access ssh --hostname %h"
           
           VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
-          VAULT_TOKEN: ${{ env.VAULT_TOKEN }}
+          VAULT_TOKEN: ${{ steps.vault.outputs.vault_token }}
           TUNNEL_SERVICE_TOKEN_ID: ${{ secrets.TUNNEL_SERVICE_TOKEN_ID }}
           TUNNEL_SERVICE_TOKEN_SECRET: ${{ secrets.TUNNEL_SERVICE_TOKEN_SECRET }}
           
