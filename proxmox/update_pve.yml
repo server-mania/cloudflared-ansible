@@ -24,7 +24,7 @@
         timeout: 120
       register: vault_response
       delegate_to: localhost
-      #no_log: true
+      no_log: true
       run_once: true
 
     #- name: 変数の全中身をそのまま表示
