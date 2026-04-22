@@ -1,0 +1,72 @@
+name: ansible cloudflared
+
+on:
+  workflow_call:
+    inputs:
+      ansible_dir:
+        required: true
+        type: string
+        description: "ansibleを実行するディレクトリ "
+      ansible_command:
+        required: true
+        type: string
+        description: "実行するansibleコマンド"
+
+jobs:
+  ansible-update-job:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Import Secrets from Vault
+        id: vault
+        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          role: github-actions-role
+          method: jwt
+          exportToken: true
+          extraHeaders: |
+            CF-Access-Client-Id: ${{ secrets.TUNNEL_SERVICE_TOKEN_ID }}
+            CF-Access-Client-Secret: ${{ secrets.TUNNEL_SERVICE_TOKEN_SECRET }}
+          secrets: |
+            secret/data/boundary/ci-credentials known_hosts | SSH_KNOWN_HOSTS ;
+
+      - name: Copy Ansible Config
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          cp ansibleConfig/ansible.cfg ~/.ansible.cfg
+          
+      - name: install cloudflared
+        run: |
+         curl -L https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 \
+         -o /usr/local/bin/cloudflared
+
+         EXPECTED_SHA256=$(curl -s "https://api.github.com/repos/cloudflare/cloudflared/releases/latest" \
+            | jq -r '.body' \
+            | grep 'cloudflared-linux-amd64:' \
+            | grep -v '\.deb\|\.rpm' \
+            | awk '{print $2}')
+
+         echo "${EXPECTED_SHA256}  /usr/local/bin/cloudflared" | sha256sum -c -
+
+         chmod +x /usr/local/bin/cloudflared
+
+      - name: run ansible
+        env:
+          ANSIBLE_SSH_COMMON_ARGS: >-
+                      -o ProxyCommand="/usr/local/bin/cloudflared access ssh --hostname %h"
+          
+          VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
+          VAULT_TOKEN: ${{ env.VAULT_TOKEN }}
+          TUNNEL_SERVICE_TOKEN_ID: ${{ secrets.TUNNEL_SERVICE_TOKEN_ID }}
+          TUNNEL_SERVICE_TOKEN_SECRET: ${{ secrets.TUNNEL_SERVICE_TOKEN_SECRET }}
+          
+        run: |
+          cd ${{ inputs.ansible_dir }}
+          ${{ inputs.ansible_command }}

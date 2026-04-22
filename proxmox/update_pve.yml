@@ -3,25 +3,39 @@
 ---
 - name: Proxmox VE ホストのアップデートとアップグレード
   hosts: proxmox
+  gather_facts: false
   
   vars:
     vault_addr: "{{ lookup('env', 'VAULT_ADDR') }}"
     v_token: "{{ lookup('env', 'VAULT_TOKEN') }}"
+    CF_ACCESS_CLIENT_ID: "{{ lookup('env', 'TUNNEL_SERVICE_TOKEN_ID') }}"
+    CF_ACCESS_CLIENT_SECRET: "{{ lookup('env', 'TUNNEL_SERVICE_TOKEN_SECRET') }}"
     
   tasks:
-    - name: Vaultから認証情報を取得 (Module版)
-      community.hashi_vault.vault_read:
-        path: "ad/creds/ldapci-role"
-        url: "{{ vault_addr }}"
-        token: "{{ v_token }}"
-        validate_certs: false
-      register: vault_secret
-
-    - name: パスワードを become 用変数にセット
-      ansible.builtin.set_fact:
-        ansible_become_password: "{{ vault_secret.data.data.current_password }}"
+    - name: Vaultから認証情報を取得 (公式uriモジュール)
+      ansible.builtin.uri:
+        url: "{{ vault_addr }}/v1/ad/creds/ldapci-role"
+        #cloudflareがurllibをブロックするため対策（cloudflare側で許可する方法は分からず・・・）
+        http_agent: "curl/8.5.0"
+        headers:
+          X-Vault-Token: "{{ v_token }}"
+          CF-Access-Client-Id: "{{ lookup('env', 'TUNNEL_SERVICE_TOKEN_ID') }}"
+          CF-Access-Client-Secret: "{{ lookup('env', 'TUNNEL_SERVICE_TOKEN_SECRET') }}"
+        timeout: 120
+      register: vault_response
       delegate_to: localhost
+      #no_log: true
       run_once: true
+
+    #- name: 変数の全中身をそのまま表示
+    #  ansible.builtin.debug:
+    #    var: vault_response
+    #  run_once: true
+
+    - name: SSHパスワードとsudoパスワードをset
+      ansible.builtin.set_fact:
+        ansible_password: "{{ vault_response.json.data.current_password }}"
+        ansible_become_password: "{{ vault_response.json.data.current_password }}"
       no_log: true
 
     - name: aptキャッシュの更新と dist-upgrade の実行
