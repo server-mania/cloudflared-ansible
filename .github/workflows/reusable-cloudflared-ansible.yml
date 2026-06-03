@@ -29,6 +29,7 @@ jobs:
           url: ${{ secrets.VAULT_ADDR }}
           role: github-actions-role
           method: jwt
+          path: jwt-github
           exportToken: false
           outputToken: true
           extraHeaders: |
