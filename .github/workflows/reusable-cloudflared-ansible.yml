@@ -36,7 +36,10 @@ jobs:
             CF-Access-Client-Id: ${{ secrets.TUNNEL_SERVICE_TOKEN_ID }}
             CF-Access-Client-Secret: ${{ secrets.TUNNEL_SERVICE_TOKEN_SECRET }}
           secrets: |
-            secret/data/boundary/ci-credentials known_hosts | SSH_KNOWN_HOSTS ;
+            secret/data/ansible/known_hosts known_hosts | SSH_KNOWN_HOSTS ;
+            secret/data/ansible/hosts_ini debian | HOSTS_DEBIAN ;
+            secret/data/ansible/hosts_ini proxmox | HOSTS_PROXMOX ;
+            secret/data/ansible/hosts_ini k3s | HOSTS_K3S ;
 
       - name: Copy Ansible Config
         run: |
@@ -67,4 +70,11 @@ jobs:
           
         run: |
           cd ${{ inputs.ansible_dir }}
+
+          echo "$HOSTS_DEBIAN" > hosts.ini
+          echo "" >> hosts.ini
+          echo "$HOSTS_PROXMOX" >> hosts.ini
+          echo "" >> hosts.ini
+          echo "$HOSTS_K3S" >> hosts.ini
+          
           ansible-playbook -i hosts.ini ${{ inputs.ansible_command }}
