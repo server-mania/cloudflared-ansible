@@ -10,7 +10,7 @@
   tasks:
     - name: Vaultから認証情報を取得 (公式uriモジュール)
       ansible.builtin.uri:
-        url: "{{ vault_addr }}/}/v1/ldap/static-cred/ldapci-role"
+        url: "{{ vault_addr }}/v1/ldap/static-cred/ldapci-role"
         #cloudflareがurllibをブロックするため対策（cloudflare側で許可する方法は分からず・・・）
         http_agent: "curl/8.5.0"
         headers:
