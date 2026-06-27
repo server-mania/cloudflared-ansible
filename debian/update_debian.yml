@@ -10,7 +10,7 @@
   tasks:
     - name: Vaultから認証情報を取得 (公式uriモジュール)
       ansible.builtin.uri:
-        url: "{{ vault_addr }}/v1/ad/creds/ldapci-role"
+        url: "{{ vault_addr }}/}/v1/ldap/static-cred/ldapci-role"
         #cloudflareがurllibをブロックするため対策（cloudflare側で許可する方法は分からず・・・）
         http_agent: "curl/8.5.0"
         headers:
@@ -30,8 +30,8 @@
 
     - name: SSHパスワードとsudoパスワードをset
       ansible.builtin.set_fact:
-        ansible_password: "{{ vault_response.json.data.current_password }}"
-        ansible_become_password: "{{ vault_response.json.data.current_password }}"
+        ansible_password: "{{ vault_response.json.data.password }}"
+        ansible_become_password: "{{ vault_response.json.data.password }}"
       no_log: true
 
     - name: apt update と apt upgrade を実行
