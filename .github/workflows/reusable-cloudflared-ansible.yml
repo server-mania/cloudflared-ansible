@@ -49,9 +49,9 @@ jobs:
           
       - name: install cloudflared
         run: |
-         EXPECTED_SHA256="5861a10a438fe8ddcfebb3b830f83966cbf193edafce0fe2eeb198fbae1f7a22"
+         EXPECTED_SHA256="ec905ea7b7e327ff8abdde8cb64697a2152de74dbcdbf6aec9db8364eb3886cd"
          
-         curl -L https://github.com/cloudflare/cloudflared/releases/download/2026.6.1/cloudflared-linux-amd64 \
+         curl -L https://github.com/cloudflare/cloudflared/releases/download/2026.7.2/cloudflared-linux-amd64 \
          -o /usr/local/bin/cloudflared
 
          echo "${EXPECTED_SHA256}  /usr/local/bin/cloudflared" | sha256sum -c -
